@@ -1,4 +1,7 @@
-
 fastapi
 pydantic
 uvicorn
+sqlalchemy
+python-dotenv
+asyncpg
+email-validator

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
+from src.hashpass import hash_password
 from src.schemas.schema import CreateUser, ReadUsers, UpdateUser
 from src.data import data
 
@@ -46,7 +47,8 @@ def create_user(user: CreateUser) -> ReadUsers:
         "id": len(data) + 1,
         "username": user.username,
         "email": user.email,
-        "password": user.password
+        "password": hash_password(user.password),
+        "age": user.age,
     }
 
     data.append(new_user)
@@ -65,13 +67,30 @@ def delete_user(user_id: int) -> ReadUsers:
 def update_user(user_id: int, change_user: UpdateUser):
     for user in data:
         if user["id"] == user_id:
-            updates = change_user.model_dump(exclude_unset=True)
+            updates = change_user.model_dump(
+                exclude_unset=True,
+                exclude_none=True
+            )
 
             for key, value in updates.items():
                 user[key] = value
 
             return user
 
+    raise HTTPException(
+        status_code=404,
+        detail="User not found"
+    )
+
+@router.put("/{user_id}", response_model=ReadUsers)
+def update_user(user_id: int, change_user: UpdateUser):
+    for user in data:
+        if user["id"] == user_id:
+            updates = change_user.model_dump(exclude_unset=True)
+            for key, value in updates.items():
+                user[key] = value
+
+            return user
     raise HTTPException(
         status_code=404,
         detail="User not found"
