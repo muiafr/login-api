@@ -13,3 +13,6 @@ class UserModel(Base):
     password: Mapped[PasswordType]
     created_at: Mapped[CreatedAtType]
     updated_at: Mapped[UpdatedAtType]
+
+
+

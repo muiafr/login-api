@@ -5,3 +5,5 @@ sqlalchemy
 python-dotenv
 asyncpg
 email-validator
+
+authx

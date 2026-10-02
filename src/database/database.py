@@ -5,7 +5,7 @@ from sqlalchemy import String, func
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, mapped_column
 
-from src.database.config import DATABASE_URL
+from src.core.config import DATABASE_URL
 
 engine = create_async_engine(DATABASE_URL, pool_pre_ping=True)
 new_session = async_sessionmaker(engine, expire_on_commit=False)
@@ -29,5 +29,12 @@ class Base(DeclarativeBase):
 
 
 async def setup_db():
+    from src.database.models.user import UserModel
+    from src.database.models.auth import LoginModel
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+async def drop_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
