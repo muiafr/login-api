@@ -13,6 +13,7 @@ from src.schemas.auth import Login, Register
 
 router = APIRouter(prefix="/login", tags=["login"])
 
+
 @router.post("/")
 async def login(log: Login, session: Session_DEP, response: Response):
     result = await session.execute(
@@ -21,7 +22,8 @@ async def login(log: Login, session: Session_DEP, response: Response):
     user = result.scalars().first()
 
     if user is None or not secrets.compare_digest(
-        user.password, hash_password(log.password)
+        user.password,
+        hash_password(log.password),
     ):
         raise HTTPException(
             status_code=401,
@@ -31,6 +33,7 @@ async def login(log: Login, session: Session_DEP, response: Response):
     login_record = LoginModel(
         user_id=user.id,
         username=user.username,
+        email=user.email,
         password="",
     )
     session.add(login_record)
@@ -41,16 +44,18 @@ async def login(log: Login, session: Session_DEP, response: Response):
 
     return {"message": "Login successful"}
 
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(
     reg: Register,
     session: Session_DEP,
-    response: Response
+    response: Response,
 ):
-    new_user = LoginModel(
+    new_user = UserModel(
         username=reg.username,
         email=reg.email,
-        password=hash_password(reg.password)
+        age=18,
+        password=hash_password(reg.password),
     )
 
     session.add(new_user)
@@ -58,27 +63,17 @@ async def register(
     try:
         await session.commit()
         await session.refresh(new_user)
-
     except IntegrityError:
         await session.rollback()
-
         raise HTTPException(
             status_code=409,
-            detail="Username or email already exists"
+            detail="Username or email already exists",
         )
 
-    token = security.create_access_token(
-        uid=str(new_user.id)
-    )
-
-    security.set_access_cookies(
-        token,
-        response
-    )
+    token = security.create_access_token(uid=str(new_user.id))
+    security.set_access_cookies(token, response)
 
     return {
         "message": "Registration successful",
-        "user_id": new_user.id
+        "user_id": new_user.id,
     }
-
-
