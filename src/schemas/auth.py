@@ -1,4 +1,5 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, Field
+from src.schemas.user import CreateUser
 
 
 class Login(BaseModel):
@@ -6,14 +7,7 @@ class Login(BaseModel):
     password: str = Field(min_length=8)
 
 
-class Register(Login):
-    email: EmailStr = Field(description="User email")
 
-    @field_validator("password")
-    @classmethod
-    def password_validator(cls, password: str) -> str:
-        if not any(char.isdigit() for char in password):
-            raise ValueError("Password must contain at least one digit")
-        if not any(char.isupper() for char in password):
-            raise ValueError("Password must contain at least one uppercase letter")
-        return password
+
+class Register(CreateUser):
+    pass

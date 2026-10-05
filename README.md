@@ -1,48 +1,40 @@
+# FastAPI Study
 
+A learning project for a user API with PostgreSQL, JWT cookies, and login history.
 
-Установка зависимостей: `pip install -r requirements.txt`.
+## Setup
 
-Запуск: `python main.py` или `uvicorn main:app --reload`.
-Документация API: http://127.0.0.1:8000/docs.
+Install dependencies: `pip install -r requirements.txt`.
+Configure `.env`: `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_HOST`,
+`DATABASE_PORT`, `DATABASE_NAME`, and a long random `JWT_SECRET_KEY`.
+PostgreSQL must be running, and the configured database must already exist.
+Start the app: `uvicorn main:app --reload`.
+Swagger UI: http://127.0.0.1:8000/docs.
+Without database settings, the app uses SQLite in `fastapistudy.db`.
 
-Подключение PostgreSQL настраивается в `.env` через `DATABASE_USER`,
-`DATABASE_HOST`, `DATABASE_PASSWORD`, `DATABASE_NAME` и `DATABASE_PORT`.
-База данных должна существовать; таблицы создаются автоматически при запуске.
-PUT требует все поля пользователя. Пароли не возвращаются в ответах API.
+Tables are created at startup. If the existing `login` table is missing the
+`email` column, it is added without deleting data. Other schema changes
+require separate migrations.
 
-Вход: POST /login/ с именем и паролем зарегистрированного пользователя.
-Для постоянного ключа токенов задайте JWT_SECRET_KEY в .env; без него
-после перезапуска нужно войти заново.
-Изменять и удалять можно только свой аккаунт.
-Для PUT и DELETE передайте заголовок X-CSRF-TOKEN со значением cookie
-csrf_access_token, полученной при входе.
+## Endpoints
 
+- POST `/auth/register`: username, email, age, password; creates an account and sets authentication cookies.
+- POST `/auth/login`: username, password; logs in and records the login.
+- GET `/users/`: lists users; requires authentication.
+- GET `/users/{user_id}`: retrieves a user; requires authentication.
+- PUT `/users/{user_id}`: replaces all user fields; only your own account.
+- DELETE `/users/{user_id}`: deletes your own account.
 
-## Структура после переноса
+For PUT and DELETE, send the `X-CSRF-TOKEN` header with the value of the
+`csrf_access_token` cookie.
+Cookies are configured for local HTTP. For HTTPS deployment, set
+`config.JWT_COOKIE_SECURE = True` in `src/core/security.py`.
+Passwords are hashed with Argon2 and excluded from API responses.
+Existing SHA-256 hashes are upgraded after a successful login.
+Without a persistent `JWT_SECRET_KEY`, restarting the app invalidates tokens.
 
-```text
-src/
-  api/{auth.py,users.py}
-  database/database.py
-  database/models/{auth.py,user.py}
-  schemas/{auth.py,user.py}
-  core/{config.py,security.py,dependencies.py}
-  main.py
-tests/{test_auth.py,test_users.py}
-alembic/versions/
-.env.example
-.gitignore
-requirements.txt
-main.py
-```
+## Tests
 
-Из корня проекта: `pip install -r requirements.txt`, скопировать `.env.example` в `.env`, заполнить настройки PostgreSQL, затем `uvicorn src.main:app --reload`. Старые команды `python main.py` и `uvicorn main:app --reload` также работают. Swagger: http://localhost:8000/docs.
-
-Адреса API, схемы, хеширование, JWT-cookie и создание таблиц при запуске сохранены. Новых endpoints нет.
-
-## Что дописать самостоятельно
-
-- Написать тесты в tests/test_auth.py и tests/test_users.py: сейчас это пустые заготовки.
-- Настроить Alembic и первую миграцию: сейчас подготовлены только каталоги; setup_db() оставлен.
-- Исправить существующее несоответствие авторизации: register создаёт LoginModel без обязательного user_id, а login — без обязательного email. Вход ищет UserModel, регистрация сохраняет LoginModel. Это исходное поведение, перенос его не исправляет.
-- При необходимости самостоятельно реализовать logout, current user, PATCH и смену пароля: в этом переносе они не добавлены.
+Run `python -m pytest -q`.
+Tests use a separate temporary SQLite database regardless of the application
+connection settings. These tests do not verify PostgreSQL compatibility.

@@ -1,7 +1,7 @@
 import datetime
 from typing import Annotated
 
-from sqlalchemy import String, func
+from sqlalchemy import String, func, inspect, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, mapped_column
 
@@ -34,6 +34,13 @@ async def setup_db():
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        columns = await conn.run_sync(
+            lambda connection: inspect(connection).get_columns("login")
+        )
+        if "email" not in {column["name"] for column in columns}:
+            await conn.execute(text(
+                "ALTER TABLE login ADD COLUMN email VARCHAR(256) NOT NULL DEFAULT ''"
+            ))
 
 async def drop_db():
     async with engine.begin() as conn:

@@ -9,3 +9,9 @@ aiosqlite
 
 authx
 pytest
+
+httpx
+argon2-cffi
+
+starlette
+argon2

@@ -8,3 +8,6 @@ __pycache__/
 .pytest_cache/
 users.db
 users.db-*
+test_fastapistudy.db
+fastapistudy.db
+fastapistudy.db-*
